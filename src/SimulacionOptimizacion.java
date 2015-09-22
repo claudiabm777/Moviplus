@@ -38,5 +38,9 @@ public class SimulacionOptimizacion extends Simulacion {
 		Simulacion.cargarPasajeros(archivoDatos1, pasajerosIniciales);
 		Simulacion.cargarConductores(archivoDatos2, conductoresIniciales);
 	}
+	
+//	public static void main(String[] args) {
+//		
+//	}
 
 }

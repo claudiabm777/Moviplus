@@ -7,6 +7,7 @@ public class Conductor {
 	private Integer calle;
 	private Integer carrera;
 	private Long id;
+	private Double tiempoDisponible;
 	
 	//-------------------------------------------------------------------------------
 	//Constructor--------------------------------------------------------------------
@@ -15,6 +16,7 @@ public class Conductor {
 		this.calle=calle;
 		this.carrera=carrera;
 		this.id=id;
+		this.tiempoDisponible=0.0;
 	}
 	
 	//-------------------------------------------------------------------------------
@@ -42,6 +44,14 @@ public class Conductor {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public Double getTiempoDisponible() {
+		return tiempoDisponible;
+	}
+
+	public void setTiempoDisponible(Double tiempoDisponible) {
+		this.tiempoDisponible = tiempoDisponible;
 	}
 	
 	//-------------------------------------------------------------------------------

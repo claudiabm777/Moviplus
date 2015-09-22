@@ -9,10 +9,20 @@ import jxl.Workbook;
 
 
 public class Simulacion {
+
+	//-------------------------------------------------------------------------------
+	//Constantes---------------------------------------------------------------------
+	//-------------------------------------------------------------------------------
+	
+	//Todo esta en metros y en segundos
+	public final static Double DISTANCIA_CUADRAS=80.0;
+	public final static Double TIEMPO_IMPACIENCIA=1200.0;
+	public final static Double VELOCIDAD_CONDUCTORES=40000.0/3600.0;
+	
+	
 	//-------------------------------------------------------------------------------
 	//Metodos------------------------------------------------------------------------
 	//-------------------------------------------------------------------------------
-	
 	public static void cargarPasajeros(InputStream archivoDatos1,PriorityQueue<Pasajero>pasajerosIniciales) throws Exception{
 		Workbook workbook = Workbook.getWorkbook(archivoDatos1);
 		Sheet sheet = workbook.getSheet("Servicios");
@@ -40,20 +50,21 @@ public class Simulacion {
 			//System.out.println(c.getCalle()+" --- "+c.getCarrera()+" -- "+c.getId());
 		}
 	}
-	public static void main(String[] args) {
-		try {
-			PriorityQueue<Pasajero>in=new PriorityQueue<Pasajero>();
-			InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
-			Simulacion.cargarPasajeros(archivoDatos1,in);
-			for(int i=0;i<in.size();i++){
-				Pasajero p=in.poll();
-				System.out.println(p.getHoraSolicitud());
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+//	public static void main(String[] args) {
+//		try {
+//			PriorityQueue<Pasajero>in=new PriorityQueue<Pasajero>();
+//			InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
+//			Simulacion.cargarPasajeros(archivoDatos1,in);
+//			int uuu=in.size();
+//			for(int i=0;i<uuu;i++){
+//				Pasajero p=in.poll();
+//				System.out.println(p.getHoraSolicitud()+" ----- "+p.getId());
+//			}
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//	}
 
 }
