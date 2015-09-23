@@ -31,9 +31,22 @@ public class Simulacion {
 		Cell[]carrerasIniciales=sheet.getColumn(3);
 		Cell[]callesFinales=sheet.getColumn(4);
 		Cell[]carrerasFinales=sheet.getColumn(5);
+		Double t1=null;
 		for(int i =2;i<horas.length-1;i++){
+			String tiempo=horas[i].getContents().split(" ")[0];
+			String apm=horas[i].getContents().split(" ")[1];
+			Double h=Double.parseDouble(tiempo.split(":")[0]);
+			Double m=Double.parseDouble(tiempo.split(":")[1]);
+			Double s=Double.parseDouble(tiempo.split(":")[2]);
+			if(apm.startsWith("P")){
+				h+=12.0;
+			}
+			Double tiempoTotal=h*60.0*60.0+m*60.0+s;
+			if(i==2){
+				t1=tiempoTotal;
+			}
 			Long id=(long) i-1;
-			Pasajero p=new Pasajero(Double.parseDouble(horas[i].getContents().replace(',', '.')),Integer.parseInt(callesIniciales[i].getContents()),Integer.parseInt(carrerasIniciales[i].getContents()),Integer.parseInt(callesFinales[i].getContents()),Integer.parseInt(carrerasFinales[i].getContents()),id);
+			Pasajero p=new Pasajero(tiempoTotal-t1,Integer.parseInt(callesIniciales[i].getContents()),Integer.parseInt(carrerasIniciales[i].getContents()),Integer.parseInt(callesFinales[i].getContents()),Integer.parseInt(carrerasFinales[i].getContents()),id);
 			pasajerosIniciales.add(p);
 		}
 	}

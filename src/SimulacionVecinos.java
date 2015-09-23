@@ -22,7 +22,7 @@ public class SimulacionVecinos {
 	//-------------------------------------------------------------------------------
 	private List<Conductor>conductoresIniciales;
 	private PriorityQueue<Pasajero>pasajerosIniciales;
-	private HashMap<Pasajero,Conductor>asignacion;
+	public HashMap<Pasajero,Conductor>asignacion;
 	private List<Pasajero>pasajerosFinales;
 	
 	//-------------------------------------------------------------------------------
@@ -61,10 +61,9 @@ public class SimulacionVecinos {
 	
 	private Double tiempoEsperaTotal(){
 		Double tiempoTotal=0.0;
-		for(int i=0;i<pasajerosIniciales.size();i++){
+		for(int i=0;i<pasajerosFinales.size();i++){
 			tiempoTotal+=pasajerosFinales.get(i).getTiempoEspera();
 		}
-		System.out.println(asignacion);
 		return tiempoTotal;
 	}
 	
@@ -73,21 +72,21 @@ public class SimulacionVecinos {
 		for(int i=0;i<tamanio;i++){
 			Pasajero pasajero=pasajerosIniciales.poll();
 			Conductor conductor=conductorMasCercano(pasajero);
-			if(Math.abs(pasajero.getHoraSolicitud()-conductor.getTiempoDisponible())>=Simulacion.TIEMPO_IMPACIENCIA){
+			if(conductor.getTiempoDisponible()-pasajero.getHoraSolicitud()>=Simulacion.TIEMPO_IMPACIENCIA){
 				pasajero.setTiempoEspera(Simulacion.TIEMPO_IMPACIENCIA);
 				pasajerosFinales.add(pasajero);
 			}
 			else if(pasajero.getHoraSolicitud()>=conductor.getTiempoDisponible()){
 				pasajero.setTiempoEspera(0.0);
 				conductoresIniciales.remove(conductor);
-				double distanciaX1=Math.abs(pasajero.getCalleInicial()-conductoresIniciales.get(i).getCalle());
-				double distanciaY1=Math.abs(pasajero.getCarreraInicial()-conductoresIniciales.get(i).getCarrera());
+				double distanciaX1=Math.abs(pasajero.getCalleInicial()-conductor.getCalle());
+				double distanciaY1=Math.abs(pasajero.getCarreraInicial()-conductor.getCarrera());
 				double distanciaPasajero=distanciaX1+distanciaY1;
 				double distanciaX2=Math.abs(pasajero.getCalleInicial()-pasajero.getCalleFinal());
 				double distanciaY2=Math.abs(pasajero.getCarreraInicial()-pasajero.getCarreraFinal());
 				double distanciaDestino=distanciaX2+distanciaY2;
 				double tiempo=(distanciaPasajero+distanciaDestino)*Simulacion.DISTANCIA_CUADRAS/Simulacion.VELOCIDAD_CONDUCTORES;
-				Conductor c=new Conductor(pasajero.getCalleFinal(),pasajero.getCarreraFinal(),-2L);
+				Conductor c=new Conductor(pasajero.getCalleFinal(),pasajero.getCarreraFinal(),conductor.getId());
 				c.setTiempoDisponible(tiempo+conductor.getTiempoDisponible());
 				conductoresIniciales.add(c);
 				asignacion.put(pasajero, conductor);
@@ -96,14 +95,14 @@ public class SimulacionVecinos {
 			else if(pasajero.getHoraSolicitud()<conductor.getTiempoDisponible()){
 				pasajero.setTiempoEspera(conductor.getTiempoDisponible()-pasajero.getHoraSolicitud());
 				conductoresIniciales.remove(conductor);
-				double distanciaX1=Math.abs(pasajero.getCalleInicial()-conductoresIniciales.get(i).getCalle());
-				double distanciaY1=Math.abs(pasajero.getCarreraInicial()-conductoresIniciales.get(i).getCarrera());
+				double distanciaX1=Math.abs(pasajero.getCalleInicial()-conductor.getCalle());
+				double distanciaY1=Math.abs(pasajero.getCarreraInicial()-conductor.getCarrera());
 				double distanciaPasajero=distanciaX1+distanciaY1;
 				double distanciaX2=Math.abs(pasajero.getCalleInicial()-pasajero.getCalleFinal());
 				double distanciaY2=Math.abs(pasajero.getCarreraInicial()-pasajero.getCarreraFinal());
 				double distanciaDestino=distanciaX2+distanciaY2;
 				double tiempo=(distanciaPasajero+distanciaDestino)*Simulacion.DISTANCIA_CUADRAS/Simulacion.VELOCIDAD_CONDUCTORES;
-				Conductor c=new Conductor(pasajero.getCalleFinal(),pasajero.getCarreraFinal(),-2L);
+				Conductor c=new Conductor(pasajero.getCalleFinal(),pasajero.getCarreraFinal(),conductor.getId());
 				c.setTiempoDisponible(tiempo+conductor.getTiempoDisponible());
 				conductoresIniciales.add(c);
 				asignacion.put(pasajero, conductor);
@@ -117,7 +116,7 @@ public class SimulacionVecinos {
 		Conductor respuesta=null;
 		boolean hayConductoresDisponibles=false;
 		for(int i=0;i<conductoresIniciales.size();i++){
-			if(pasajero.getHoraSolicitud()<=conductoresIniciales.get(i).getTiempoDisponible()){
+			if(pasajero.getHoraSolicitud()>=conductoresIniciales.get(i).getTiempoDisponible()){
 				hayConductoresDisponibles=true;
 			}
 		}
@@ -125,12 +124,17 @@ public class SimulacionVecinos {
 			double minimo=999999999.0;
 			Conductor conductorMinimo=null;
 			for(int i=0;i<conductoresIniciales.size();i++){
-				double distanciaX=Math.abs(pasajero.getCalleInicial()-conductoresIniciales.get(i).getCalle());
-				double distanciaY=Math.abs(pasajero.getCarreraInicial()-conductoresIniciales.get(i).getCarrera());
-				double distancia=distanciaX+distanciaY;
-				if(distancia<minimo){
-					minimo=distancia;
-					conductorMinimo=conductoresIniciales.get(i);
+				if(pasajero.getHoraSolicitud()>=conductoresIniciales.get(i).getTiempoDisponible()){
+					double distanciaX=Math.abs(pasajero.getCalleInicial()-conductoresIniciales.get(i).getCalle());
+					double distanciaY=Math.abs(pasajero.getCarreraInicial()-conductoresIniciales.get(i).getCarrera());
+					double distancia=distanciaX+distanciaY;
+//					if(pasajero.getId()==38L){
+//						System.out.println("Distancia: "+distancia+" Minimo: "+minimo+"---"+(distancia<minimo)+" Conductor: "+conductoresIniciales.get(i).getId());
+//					}
+					if(distancia<minimo){
+						minimo=distancia;
+						conductorMinimo=conductoresIniciales.get(i);
+					}
 				}
 			}
 			respuesta=conductorMinimo;
@@ -149,10 +153,21 @@ public class SimulacionVecinos {
 		return respuesta;
 	}
 	
-	public static void main(String[] args) {
-		SimulacionVecinos simulacion=new SimulacionVecinos();
-		Double r=simulacion.simulacionVecinosCercanos();
-		System.out.println("Tiempo espera total: "+r);
-	}
+//	public static void main(String[] args) {
+//		SimulacionVecinos simulacion=new SimulacionVecinos();
+//		Double r=simulacion.simulacionVecinosCercanos();
+//		System.out.println("Tiempo espera total: "+r);
+//		for(int i=0;i<simulacion.pasajerosFinales.size();i++){
+//			Pasajero pas=simulacion.pasajerosFinales.get(i);
+//			double p=pas.getHoraSolicitud();
+//			Conductor c=simulacion.asignacion.get(simulacion.pasajerosFinales.get(i));
+//			if(c!=null){
+//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+"\t el conductor: "+c.getId()+" tiene tiempo: "+c.getTiempoDisponible());
+//			}
+//			else{
+//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+" - NO ENTROOOO");
+//			}
+//		}
+//	}
 
 }
