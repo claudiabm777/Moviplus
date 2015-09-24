@@ -153,21 +153,21 @@ public class SimulacionVecinos {
 		return respuesta;
 	}
 	
-//	public static void main(String[] args) {
-//		SimulacionVecinos simulacion=new SimulacionVecinos();
-//		Double r=simulacion.simulacionVecinosCercanos();
-//		System.out.println("Tiempo espera total: "+r);
-//		for(int i=0;i<simulacion.pasajerosFinales.size();i++){
-//			Pasajero pas=simulacion.pasajerosFinales.get(i);
-//			double p=pas.getHoraSolicitud();
-//			Conductor c=simulacion.asignacion.get(simulacion.pasajerosFinales.get(i));
-//			if(c!=null){
-//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+"\t el conductor: "+c.getId()+" tiene tiempo: "+c.getTiempoDisponible());
-//			}
-//			else{
-//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+" - NO ENTROOOO");
-//			}
-//		}
-//	}
+	public static void main(String[] args) {
+		SimulacionVecinos simulacion=new SimulacionVecinos();
+		Double r=simulacion.simulacionVecinosCercanos();
+		System.out.println("Tiempo espera total: "+r);
+		for(int i=0;i<simulacion.pasajerosFinales.size();i++){
+			Pasajero pas=simulacion.pasajerosFinales.get(i);
+			double p=pas.getHoraSolicitud();
+			Conductor c=simulacion.asignacion.get(simulacion.pasajerosFinales.get(i));
+			if(c!=null){
+				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+"\t el conductor: "+c.getId()+" tiene tiempo: "+c.getTiempoDisponible());
+			}
+			else{
+				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+" - NO ENTROOOO");
+			}
+		}
+	}
 
 }
