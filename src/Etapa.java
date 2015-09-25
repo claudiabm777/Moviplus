@@ -6,8 +6,10 @@ import gurobi.GRBModel;
 import gurobi.GRBVar;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 
 public class Etapa {
@@ -29,8 +31,11 @@ public class Etapa {
 	private Integer clientesPerdidos;
 	private Double tiempoEsperaPromedio;
 	
+	public List<Pasajero>pasajerosSinAsignar;
+	public List<Conductor>conductoresSinAsignar;
 	private List<Nodo>nodosPasajeros;
 	private List<Nodo>nodosConductores;
+	public List<Pasajero>listaPerdidos;
 	public Arco[][]arcos;
 	public GRBVar[][]variables;
 	//-------------------------------------------------------------------------------
@@ -43,7 +48,9 @@ public class Etapa {
 		conductores=new ArrayList<Conductor>();
 		nodosPasajeros=new ArrayList<Nodo>();
 		nodosConductores=new ArrayList<Nodo>();
-		
+		pasajerosSinAsignar=new ArrayList<Pasajero>();
+		conductoresSinAsignar=new ArrayList<Conductor>();
+		listaPerdidos=new ArrayList<Pasajero>();
 		this.id=id;
 		this.horaInicial=horaInicial;
 		this.horaFinal=horaFinal;
@@ -223,16 +230,40 @@ public class Etapa {
 				expr = new GRBLinExpr();
 				for(int j=0;j<nodosPasajeros.size();j++){
 					expr.addTerm(1.0, variables[j][i]);
-					
 				}
 				model.addConstr(expr, GRB.EQUAL, (double)nodosConductores.get(i).b, "c_C"+i);
 			}
 			model.optimize();
 			for(int i=0;i<nodosPasajeros.size();i++){
 				for(int j=0;j<nodosConductores.size();j++){
-					System.out.println(variables[i][j].get(GRB.StringAttr.VarName)+ " " +variables[i][j].get(GRB.DoubleAttr.X));
+					//if(variables[i][j].get(GRB.DoubleAttr.X)>0)
+					//System.out.println(variables[i][j].get(GRB.StringAttr.VarName)+ " " +variables[i][j].get(GRB.DoubleAttr.X));
+					if(variables[i][j].get(GRB.DoubleAttr.X)>0.0){
+						if(nodosPasajeros.get(i).pasajero!=null&&nodosConductores.get(j).conductor!=null){
+							//asignacion.put(nodosPasajeros.get(i).pasajero, nodosConductores.get(j).conductor);
+							int distanciaC=Math.abs(nodosPasajeros.get(i).pasajero.getCalleInicial()-nodosConductores.get(j).conductor.getCalle());
+							int distanciaCr=Math.abs(nodosPasajeros.get(i).pasajero.getCarreraInicial()-nodosConductores.get(j).conductor.getCarrera());
+							Double dist=(double) (distanciaC+distanciaCr);
+							Double tiempoE=dist*Simulacion.DISTANCIA_CUADRAS/Simulacion.VELOCIDAD_CONDUCTORES;
+							Double tiempo2=horaFinal-nodosPasajeros.get(i).pasajero.getHoraSolicitud();
+							nodosPasajeros.get(i).pasajero.setTiempoEspera(nodosPasajeros.get(i).pasajero.getTiempoEspera()+tiempoE+tiempo2);
+							asignacion.put(nodosPasajeros.get(i).pasajero, nodosConductores.get(j).conductor);
+							Conductor c=new Conductor(nodosPasajeros.get(i).pasajero.getCalleFinal(),nodosPasajeros.get(i).pasajero.getCarreraFinal(),nodosConductores.get(j).conductor.getId());
+							int distanciaC2=Math.abs(nodosPasajeros.get(i).pasajero.getCalleInicial()-nodosPasajeros.get(i).pasajero.getCalleFinal());
+							int distanciaCr2=Math.abs(nodosPasajeros.get(i).pasajero.getCarreraInicial()-nodosPasajeros.get(i).pasajero.getCarreraFinal());
+							Double dist2=(double) (distanciaC2+distanciaCr2);
+							Double tiempoE2=dist2*Simulacion.DISTANCIA_CUADRAS/Simulacion.VELOCIDAD_CONDUCTORES;
+							Double tiempoDispCN=tiempoE2+tiempoE;	
+							c.setTiempoDisponible(ventanaTiempo*(id)+tiempoDispCN);
+							conductoresSinAsignar.add(c);
+							
+						}
+					}
+					
 				}
 			}
+			
+			actualizarInformacionEtapa();
 			model.dispose();
 			env.dispose();
 		    
@@ -241,6 +272,70 @@ public class Etapa {
 			e.printStackTrace();
 		}
 	     
+	}
+	public void actualizarInformacionEtapa(){
+		vehiculosDisponiblesInicio=conductores.size();
+		//serviciosFinalizados se actualiza en las demas etapas
+		nuevasSolicitudes=pasajeros.size();
+		solicitudesAsignadas=asignacion.keySet().size();
+		clientesPerdidos=0;
+		if(solicitudesAsignadas<nuevasSolicitudes){
+			solicitudesNoAsignadas=nuevasSolicitudes-solicitudesAsignadas;
+			for(int i=0;i<pasajeros.size();i++){
+				Conductor c=asignacion.get(pasajeros.get(i));
+				if(c==null){
+					System.out.println(" - "+pasajeros.get(i).getHoraSolicitud());
+					Double tiempo=horaFinal-pasajeros.get(i).getHoraSolicitud();
+					pasajeros.get(i).setTiempoEspera(pasajeros.get(i).getTiempoEspera()+tiempo);
+					if(pasajeros.get(i).getTiempoEspera()>=Simulacion.TIEMPO_IMPACIENCIA){
+						clientesPerdidos++;
+						listaPerdidos.add(pasajeros.get(i));
+					}else{
+						pasajerosSinAsignar.add(pasajeros.get(i));
+					}
+					
+				}
+			}
+			
+		}else{
+			solicitudesNoAsignadas=0;
+		}
+		Collection<Conductor>condAsign=asignacion.values();
+		
+		for(int i=0;i<conductores.size();i++){
+			int c=0;
+			for(Conductor co:condAsign){
+				if(conductores.get(i).getId()==co.getId()){
+					c++;
+				}
+			}
+			if(c==0){
+				conductores.get(i).setTiempoDisponible(ventanaTiempo*(id));
+				conductoresSinAsignar.add(conductores.get(i));
+			}
+		}
+		tiempoEsperaPromedio=tiempoEsperaPromedio();
+		
+	}
+	
+	public Double tiempoEsperaPromedio(){
+		Double respuesta=0.0;
+		Set<Pasajero>p1=asignacion.keySet();
+		
+		for(Pasajero p:p1){
+			respuesta+=p.getTiempoEspera();
+		}
+		for(int i=0;i<pasajerosSinAsignar.size();i++){
+			respuesta+=pasajerosSinAsignar.get(i).getTiempoEspera();
+		}
+		if((((double)(p1.size()+pasajerosSinAsignar.size())))==0.0){
+			return respuesta=Simulacion.TIEMPO_IMPACIENCIA;
+		}
+		int c=0;
+		if(clientesPerdidos>0){
+			c=1;
+		}
+		return (respuesta/((double)(p1.size()+pasajerosSinAsignar.size())))+c*Simulacion.TIEMPO_IMPACIENCIA;
 	}
 	
 	public void crearNodos(){
