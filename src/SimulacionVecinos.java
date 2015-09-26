@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import javax.swing.JOptionPane;
+
 import jxl.Cell;
 import jxl.Sheet;
 import jxl.Workbook;
@@ -14,16 +16,17 @@ public class SimulacionVecinos {
 	//-------------------------------------------------------------------------------
 	//Constantes----------------------------------------------------------------------
 	//-------------------------------------------------------------------------------
-	public final static InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
-	public final static InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
+	//public final static InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
+	//public final static InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
 	
 	//-------------------------------------------------------------------------------
 	//Atributos----------------------------------------------------------------------
 	//-------------------------------------------------------------------------------
-	private List<Conductor>conductoresIniciales;
-	private PriorityQueue<Pasajero>pasajerosIniciales;
+	public List<Conductor>conductoresIniciales;
+	public PriorityQueue<Pasajero>pasajerosIniciales;
 	public HashMap<Pasajero,Conductor>asignacion;
-	private List<Pasajero>pasajerosFinales;
+	public List<Pasajero>pasajerosFinales;
+	public int clientesPerdidos;
 	
 	//-------------------------------------------------------------------------------
 	//Constructor--------------------------------------------------------------------
@@ -55,15 +58,24 @@ public class SimulacionVecinos {
 		return respuesta;
 	}
 	private void cargarInformacionInicial() throws Exception{
+		InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
+		InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
 		Simulacion.cargarPasajeros(archivoDatos1, pasajerosIniciales);
 		Simulacion.cargarConductores(archivoDatos2, conductoresIniciales);
 	}
 	
 	private Double tiempoEsperaTotal(){
 		Double tiempoTotal=0.0;
+		clientesPerdidos=0;
 		for(int i=0;i<pasajerosFinales.size();i++){
+			if(pasajerosFinales.get(i).getTiempoEspera()>=20.0*60.0){
+				clientesPerdidos++;
+			}
 			tiempoTotal+=pasajerosFinales.get(i).getTiempoEspera();
 		}
+		
+		JOptionPane.showMessageDialog (null, "El tiempo de espera total fue: "+tiempoTotal+"\nEl tiempo promedio fue: "+(tiempoTotal/pasajerosFinales.size())+"\nLos clientes perdidos fueron: "+clientesPerdidos, "Política anterior", JOptionPane.INFORMATION_MESSAGE);
+
 		return tiempoTotal;
 	}
 	
@@ -153,21 +165,21 @@ public class SimulacionVecinos {
 		return respuesta;
 	}
 	
-	public static void main(String[] args) {
-		SimulacionVecinos simulacion=new SimulacionVecinos();
-		Double r=simulacion.simulacionVecinosCercanos();
-		System.out.println("Tiempo espera total: "+r);
-		for(int i=0;i<simulacion.pasajerosFinales.size();i++){
-			Pasajero pas=simulacion.pasajerosFinales.get(i);
-			double p=pas.getHoraSolicitud();
-			Conductor c=simulacion.asignacion.get(simulacion.pasajerosFinales.get(i));
-			if(c!=null){
-				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+"\t el conductor: "+c.getId()+" tiene tiempo: "+c.getTiempoDisponible());
-			}
-			else{
-				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+" - NO ENTROOOO");
-			}
-		}
-	}
+//	public static void main(String[] args) {
+//		SimulacionVecinos simulacion=new SimulacionVecinos();
+//		Double r=simulacion.simulacionVecinosCercanos();
+//		System.out.println("Tiempo espera total: "+r);
+//		for(int i=0;i<simulacion.pasajerosFinales.size();i++){
+//			Pasajero pas=simulacion.pasajerosFinales.get(i);
+//			double p=pas.getHoraSolicitud();
+//			Conductor c=simulacion.asignacion.get(simulacion.pasajerosFinales.get(i));
+//			if(c!=null){
+//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+"\t el conductor: "+c.getId()+" tiene tiempo: "+c.getTiempoDisponible());
+//			}
+//			else{
+//				System.out.println("El pasajero: "+pas.getId()+" tiene tiempo: "+p+" - NO ENTROOOO");
+//			}
+//		}
+//	}
 
 }

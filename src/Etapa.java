@@ -196,7 +196,7 @@ public class Etapa {
 			agregarPasajerosFicticeos(Math.abs(numeroFicticeos));
 		}
 		//ya estan niveladas las variables de oferta y demanda
-		System.out.println("HHHHHHHHHHHHHHHHHHHHHHHHHH NP: "+nodosPasajeros.size()+" NC: "+nodosConductores.size());
+		//System.out.println("HHHHHHHHHHHHHHHHHHHHHHHHHH NP: "+nodosPasajeros.size()+" NC: "+nodosConductores.size());
 		crearArcos();
 		 GRBEnv env;
 		try {
@@ -284,7 +284,7 @@ public class Etapa {
 			for(int i=0;i<pasajeros.size();i++){
 				Conductor c=asignacion.get(pasajeros.get(i));
 				if(c==null){
-					System.out.println(" - "+pasajeros.get(i).getHoraSolicitud());
+					//System.out.println(" - "+pasajeros.get(i).getHoraSolicitud());
 					Double tiempo=horaFinal-pasajeros.get(i).getHoraSolicitud();
 					pasajeros.get(i).setTiempoEspera(pasajeros.get(i).getTiempoEspera()+tiempo);
 					if(pasajeros.get(i).getTiempoEspera()>=Simulacion.TIEMPO_IMPACIENCIA){

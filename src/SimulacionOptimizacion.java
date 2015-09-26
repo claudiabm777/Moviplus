@@ -1,16 +1,37 @@
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 import gurobi.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
+import jxl.CellView;
+import jxl.Workbook;
+import jxl.WorkbookSettings;
+import jxl.format.UnderlineStyle;
+import jxl.write.Formula;
+import jxl.write.Label;
+import jxl.write.Number;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import jxl.write.biff.RowsExceededException;
+
 
 public class SimulacionOptimizacion extends Simulacion {
-	public final static InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
-	public final static InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
+	//public final static InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
+	//public final static InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
 	
 	//-------------------------------------------------------------------------------
 	//Atributos----------------------------------------------------------------------
@@ -19,7 +40,9 @@ public class SimulacionOptimizacion extends Simulacion {
 	private PriorityQueue<Pasajero>pasajerosIniciales;
 	public List<Etapa>etapas;
 	private Double ventanaTiempo;
-	
+	private WritableCellFormat timesBoldUnderline;
+	private WritableCellFormat times;
+	private String inputFile;
 	//-------------------------------------------------------------------------------
 	//Constructor--------------------------------------------------------------------
 	//-------------------------------------------------------------------------------
@@ -41,7 +64,9 @@ public class SimulacionOptimizacion extends Simulacion {
 	//-------------------------------------------------------------------------------
 	
 	private void cargarInformacionInicial() throws Exception{
+		InputStream archivoDatos1=Moviplus.class.getResourceAsStream("datos.xls");
 		Simulacion.cargarPasajeros(archivoDatos1, pasajerosIniciales);
+		InputStream archivoDatos2=Moviplus.class.getResourceAsStream("datos.xls");
 		Simulacion.cargarConductores(archivoDatos2, conductoresIniciales);
 	}
 	
@@ -54,7 +79,7 @@ public class SimulacionOptimizacion extends Simulacion {
 		for(int i=0;i<tam;i++){
 			ultimo=q.poll();
 		}
-		System.out.println("HOLAAAAAAAAAAAAAAAAAAAAAAAAA pasaj inic: "+pasajerosIniciales.size());
+		//System.out.println("HOLAAAAAAAAAAAAAAAAAAAAAAAAA pasaj inic: "+pasajerosIniciales.size());
 		Double duracionTotal=ultimo.getHoraSolicitud();
 		Integer numeroEtapas=(int) Math.ceil((duracionTotal/ventanaTiempo));
 		Double horaInicio=0.0;
@@ -83,7 +108,7 @@ public class SimulacionOptimizacion extends Simulacion {
 		for(int i=0;i<numeroEtapas;i++){
 			Etapa etapa=etapas.get(i);
 			etapa.setNuevasSolicitudes(etapa.pasajeros.size());
-			System.out.println("Etapa "+i+" num pas"+etapa.pasajeros.size()+"Inicio: "+etapa.getHoraInicial()+" fin: "+etapa.getHoraFinal());
+			System.out.println("Etapa "+i+" num pas: "+etapa.pasajeros.size()+" Inicio: "+etapa.getHoraInicial()+" fin: "+etapa.getHoraFinal());
 		}
 		
 	}
@@ -97,7 +122,7 @@ public class SimulacionOptimizacion extends Simulacion {
 					etapas.get(i).setServiciosFinalizados(0);
 				}
 				
-				if(c.getTiempoDisponible()>=etapas.get(i).getHoraInicial()&&c.getTiempoDisponible()<=etapas.get(i).getHoraFinal()){
+				if(c.getTiempoDisponible()>etapas.get(i).getHoraInicial()&&c.getTiempoDisponible()<etapas.get(i).getHoraFinal()){
 					etapas.get(i).setServiciosFinalizados(1+etapas.get(i).getServiciosFinalizados());
 				}
 				if(c.getTiempoDisponible()>=etapas.get(i-1).getHoraInicial()&&c.getTiempoDisponible()<=etapas.get(i).getHoraInicial()){
@@ -109,60 +134,134 @@ public class SimulacionOptimizacion extends Simulacion {
 		}
 	}
 	
-	public static void main(String[] args) {
-		SimulacionOptimizacion s=new SimulacionOptimizacion(30.0*60.0);
-		try {
-			s.asignarPasajerosAEtapas();
-			s.etapas.get(0).conductores=s.conductoresIniciales;
-			s.etapas.get(0).setServiciosFinalizados(0);
-			for(int i=0;i<s.etapas.size();i++){
-				s.etapas.get(i).generarModelo();
-				s.reparticionConductoresEtapas(s.etapas.get(i).conductoresSinAsignar, i);
-//				for(Conductor c:s.etapas.get(i).conductoresSinAsignar){
-//					System.out.println("Conductor sin asignar: "+c.getId()+" tiempo disp: "+c.getTiempoDisponible());
-//				}
-				if(i<s.etapas.size()-1){
-					if(s.etapas.get(i).pasajerosSinAsignar.size()>0){
-						s.etapas.get(i+1).pasajeros.addAll(s.etapas.get(i).pasajerosSinAsignar);
+	public void simulacionOptimizacion(WritableSheet excelSheet) {
+		   
+			try{
+
+	    createLabel();
+	    
+	    
+	    
+	    
+		addCaption(excelSheet,1,1,"Intervalo (Etapa)");
+		addCaption(excelSheet,2,1,"Hora inicio (segundos)");
+		addCaption(excelSheet,3,1,"Hora fin (segundos)");
+		addCaption(excelSheet,4,1,"Vehiculos disponibles inicio etapa");
+		addCaption(excelSheet,5,1,"Servicios Finalizados");
+		addCaption(excelSheet,6,1,"Nuevas solicitudes");
+		addCaption(excelSheet,7,1,"Solicitudes asignadas");
+		addCaption(excelSheet,8,1,"Solicitudes no asignadas en la etapa");
+		addCaption(excelSheet,9,1,"Clientes perdidos");
+		addCaption(excelSheet,10,1,"Tiempo de espera promedio (segundos)");
+		
+			asignarPasajerosAEtapas();
+			etapas.get(0).conductores=conductoresIniciales;
+			etapas.get(0).setServiciosFinalizados(0);
+			for(int i=0;i<etapas.size();i++){
+				etapas.get(i).generarModelo();
+				reparticionConductoresEtapas(etapas.get(i).conductoresSinAsignar, i);
+				if(i<etapas.size()-1){
+					if(etapas.get(i).pasajerosSinAsignar.size()>0){
+						etapas.get(i+1).pasajeros.addAll(etapas.get(i).pasajerosSinAsignar);
 					}
-					
 				}
+				addLabel(excelSheet, 1, (i+2), i+"");
+				addNumber(excelSheet, 2, (i+2), etapas.get(i).getHoraInicial()); 
+				addNumber(excelSheet, 3, (i+2), etapas.get(i).getHoraFinal());
+				addNumber(excelSheet, 4, (i+2), (double)etapas.get(i).getVehiculosDisponiblesInicio());
+				addNumber(excelSheet, 5, (i+2), (double)etapas.get(i).getServiciosFinalizados());
+				addNumber(excelSheet, 6, (i+2), (double)etapas.get(i).getNuevasSolicitudes());
+				addNumber(excelSheet, 7, (i+2), (double)etapas.get(i).getSolicitudesAsignadas());
+				addNumber(excelSheet, 8, (i+2), (double)etapas.get(i).getSolicitudesNoAsignadas());
+				addNumber(excelSheet, 9, (i+2), (double)etapas.get(i).getClientesPerdidos());
+				addNumber(excelSheet, 10, (i+2), etapas.get(i).getTiempoEsperaPromedio());
 				
-				System.out.println("Nuevas solicitudes: "+s.etapas.get(i).getNuevasSolicitudes());
-				System.out.println("Clientes perdidos: "+s.etapas.get(i).getClientesPerdidos());
-				System.out.println("Servicios finalizados: "+s.etapas.get(i).getServiciosFinalizados());
-				System.out.println("Solicitudes asignadas: "+s.etapas.get(i).getSolicitudesAsignadas());
-				System.out.println("Solicitudes no asignadas: "+s.etapas.get(i).getSolicitudesNoAsignadas());
-				System.out.println("Tiempo promedio: "+s.etapas.get(i).getTiempoEsperaPromedio());
-				System.out.println("Conductores disponibles iniciales: "+s.etapas.get(i).getVehiculosDisponiblesInicio());
+				System.out.println("Nuevas solicitudes: "+etapas.get(i).getNuevasSolicitudes());
+				System.out.println("Clientes perdidos: "+etapas.get(i).getClientesPerdidos());
+				System.out.println("Servicios finalizados: "+etapas.get(i).getServiciosFinalizados());
+				System.out.println("Solicitudes asignadas: "+etapas.get(i).getSolicitudesAsignadas());
+				System.out.println("Solicitudes no asignadas: "+etapas.get(i).getSolicitudesNoAsignadas());
+				System.out.println("Tiempo promedio: "+etapas.get(i).getTiempoEsperaPromedio());
+				System.out.println("Conductores disponibles iniciales: "+etapas.get(i).getVehiculosDisponiblesInicio());
 			}
-//			Etapa e=s.etapas.get(0);
-//			e.conductores=s.conductoresIniciales;
-//			e.generarModelo();
-//			Set<Pasajero>set=e.asignacion.keySet();
-//			for(Pasajero p:set){
-//				
-//				System.out.println("Pasajero: "+p.getId()+"tiempo espera: "+p.getTiempoEspera()+"\t Conductor: "+e.asignacion.get(p).getId());
-//			}
-//			for(Conductor c:e.conductoresSinAsignar){
-//				System.out.println("Conductor sin asignar: "+c.getId()+" tiempo disp: "+c.getTiempoDisponible());
-//			}
-//			System.out.println("Numero pasajeros sin Asignar con posibilidades: "+e.pasajerosSinAsignar.size());
-//			for(Pasajero p: e.pasajerosSinAsignar){
-//				System.out.println("Pasajero sin asignar: "+p.getId());
-//			}
-//			System.out.println(e.getNuevasSolicitudes());
-//			System.out.println(e.getServiciosFinalizados());
-//			System.out.println(e.getSolicitudesAsignadas());
-//			System.out.println(e.getSolicitudesNoAsignadas());
-//			System.out.println(e.getTiempoEsperaPromedio());
-//			System.out.println(e.getVehiculosDisponiblesInicio());
+			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			//JOptionPane.showMessageDialog (null, "llllllllll! no se pudo guardar bien tu archivo, vuelve a intentarlo.", "Error", JOptionPane.ERROR_MESSAGE);
+
 		}
 	}
 	
+	  private void createLabel() throws WriteException {
+		    // Lets create a times font
+		    WritableFont times10pt = new WritableFont(WritableFont.TIMES, 10);
+		    // Define the cell format
+		    times = new WritableCellFormat(times10pt);
+		    // Lets automatically wrap the cells
+		    times.setWrap(true);
+
+		    // create create a bold font with unterlines
+		    WritableFont times10ptBoldUnderline = new WritableFont(WritableFont.TIMES, 10, WritableFont.BOLD, false,UnderlineStyle.SINGLE);
+		    timesBoldUnderline = new WritableCellFormat(times10ptBoldUnderline);
+		    // Lets automatically wrap the cells
+		    timesBoldUnderline.setWrap(true);
+
+		    CellView cv = new CellView();
+		    cv.setFormat(times);
+		    cv.setFormat(timesBoldUnderline);
+		    cv.setAutosize(true);
+
+		    
+
+		  }
+	  private void createContent(WritableSheet sheet) throws WriteException, RowsExceededException {
+    // Write a few number
+    
+    // Lets calculate the sum of it
+    StringBuffer buf = new StringBuffer();
+    buf.append("SUM(A2:A10)");
+    Formula f = new Formula(0, 10, buf.toString());
+    sheet.addCell(f);
+    buf = new StringBuffer();
+    buf.append("SUM(B2:B10)");
+    f = new Formula(1, 10, buf.toString());
+    sheet.addCell(f);
+
+    // now a bit of text
+    for (int i = 12; i < 20; i++) {
+      // First column
+      addLabel(sheet, 0, i, "Boring text " + i);
+      // Second column
+      addLabel(sheet, 1, i, "Another text");
+    }
+  }
+	  private void addCaption(WritableSheet sheet, int column, int row, String s) throws RowsExceededException, WriteException {
+		    Label label;
+		    label = new Label(column, row, s, timesBoldUnderline);
+		    sheet.addCell(label);
+		  }
+	  
+	  private void addNumber(WritableSheet sheet, int column, int row,Double num) throws WriteException, RowsExceededException {
+		  Number number;
+		    number = new Number(column, row, num, times);
+		    sheet.addCell(number);
+		  }
+
+		  private void addLabel(WritableSheet sheet, int column, int row, String s) throws WriteException, RowsExceededException {
+		    Label label;
+		    label = new Label(column, row, s, times);
+		    sheet.addCell(label);
+		  }
+
+
+//	public static void main(String[] args) {
+//		SimulacionOptimizacion s=new SimulacionOptimizacion(30.0*60.0);
+//		s.simulacionOptimizacion();
+//	}
+	
+	
+	
+//	
 //	public static void main(String[] args) {
 //		int a=9;
 //		int b=a;
